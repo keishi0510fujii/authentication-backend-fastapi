@@ -1,0 +1,37 @@
+version: '3.9'
+services:
+  app:
+    build:
+      context: .
+      target: dev
+    tty: true
+    stdin_open: true
+    image: authentication_backend_fastapi:dev
+    container_name: authentication_backend_fastapi
+    volumes:
+      - ./app:/opt/app
+      - site-package-vol:/opt/pypy/lib/pypy3.9/site-packages:ro
+    ports:
+      - "8008:8000"
+    depends_on:
+      - test-mysql
+
+  test-mysql:
+    image: mysql:8.0
+    container_name: authentication_backend_test_mysql
+    tty: true
+    stdin_open: true
+    ports:
+      - "33308:3306"
+    platform: linux/x86_64
+    environment: 
+      MYSQL_DATABASE: authentication
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_USER: testuser
+      MYSQL_PASSWORD: testsecret
+    
+    
+    
+volumes:
+  site-package-vol:
+  test-mysql-vol:
