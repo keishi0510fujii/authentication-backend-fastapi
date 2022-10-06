@@ -3,7 +3,7 @@ COPY ./app/requirements.txt /opt/app/requirements.txt
 RUN apt-get update  && \
     pip install --no-cache-dir --upgrade -r /opt/app/requirements.txt
 COPY ./app/* /opt/app/
-RUN apt-get -y install tini=0.19.0 --no-install-recommends && \
+RUN apt-get -y install tini && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
