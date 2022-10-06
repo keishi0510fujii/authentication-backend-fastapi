@@ -15,7 +15,9 @@ ARG GID=1000
 RUN groupadd -g $GID $GROUPNAME && \
     useradd -m -s /bin/bash -u $UID -g $GID $USERNAME
 COPY --from=base --chown=$USERNAME:$GROUPNAME /opt/app /opt/app
-COPY --from=base --chmod=755 /opt/pypy/lib/pypy3.9/site-packages /opt/pypy/lib/pypy3.9/site-packages
+COPY --from=base --chown=$USERNAME:$GROUPNAME /usr/bin/tini /usr/bin/tini
+COPY --from=base --chown=$USERNAME:$GROUPNAME /opt/pypy/lib/pypy3.9/site-packages /opt/pypy/lib/pypy3.9/site-packages
+COPY --from=base --chown=$USERNAME:GROUPNAME /opt/pypy/bin/uvicorn /opt/pypy/bin/uvicorn
 ENV PYTHONPATH "${PYTHONPATH}:/opt/app"
 EXPOSE 8008
 WORKDIR /opt/app
