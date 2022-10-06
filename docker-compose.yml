@@ -29,9 +29,9 @@ services:
       MYSQL_ROOT_PASSWORD: root
       MYSQL_USER: testuser
       MYSQL_PASSWORD: testsecret
-    
-    
-    
+    volumes:
+      - test-mysql-vol:/var/lib/mysql
+        
 volumes:
   site-package-vol:
   test-mysql-vol:
