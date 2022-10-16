@@ -8,6 +8,15 @@ RUN apt-get -y install tini && \
     rm -rf /var/lib/apt/lists/*
 
 FROM pypy:3.9-slim-buster as dev
+COPY --from=base /opt/app /opt/app
+COPY --from=base /usr/bin/tini /usr/bin/tini
+COPY --from=base /opt/pypy/lib/pypy3.9/site-packages /opt/pypy/lib/pypy3.9/site-packages
+COPY --from=base /opt/pypy/bin/uvicorn /opt/pypy/bin/uvicorn
+ENV PYTHONPATH "${PYTHONPATH}:/opt/app"
+EXPOSE 8008
+WORKDIR /opt/app
+
+FROM pypy:3.9-slim-buster as preview
 ARG USERNAME="fastapi"
 ARG GROUPNAME="fastapi"
 ARG UID=1000
@@ -17,8 +26,9 @@ RUN groupadd -g $GID $GROUPNAME && \
 COPY --from=base --chown=$USERNAME:$GROUPNAME /opt/app /opt/app
 COPY --from=base --chown=$USERNAME:$GROUPNAME /usr/bin/tini /usr/bin/tini
 COPY --from=base --chown=$USERNAME:$GROUPNAME /opt/pypy/lib/pypy3.9/site-packages /opt/pypy/lib/pypy3.9/site-packages
-COPY --from=base --chown=$USERNAME:GROUPNAME /opt/pypy/bin/uvicorn /opt/pypy/bin/uvicorn
+COPY --from=base --chown=$USERNAME:$GROUPNAME /opt/pypy/bin/uvicorn /opt/pypy/bin/uvicorn
 ENV PYTHONPATH "${PYTHONPATH}:/opt/app"
 EXPOSE 8008
 WORKDIR /opt/app
 USER $USERNAME
+
