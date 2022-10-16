@@ -23,7 +23,10 @@ class AccountRepositoryMysql(AccountRepository):
             raise Exception('error save accounts')
 
     async def find_by_email(self, email: str) -> Account:
-        query = MySQLQuery.from_(self.__root_table).select('id', 'email', 'hashed_password', 'activate')
+        query = MySQLQuery\
+            .from_(self.__root_table)\
+            .select('id', 'email', 'hashed_password', 'activate')\
+            .where(self.__root_table.email == email)
         query_result = await self.__connection.execute(str(query))
         record = await query_result.first()
         return self.__convert_to_entity(record)

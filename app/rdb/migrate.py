@@ -1,6 +1,6 @@
 from rdb.migrations.migrator_collection import MigratorCollection
 from rdb.migrations.create_accounts_table import CreateAccountsTable
-from config.unittest_rdb import MysqlConfig
+from config.rdb import MysqlConfig
 
 
 async def migrate():
