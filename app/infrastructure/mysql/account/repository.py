@@ -5,11 +5,11 @@ from aiomysql.sa.connection import SAConnection
 
 
 class AccountRepositoryMysql(AccountRepository):
-    __root_table: Table
+    __table: Table
     __connection: SAConnection
 
     def __init__(self, conn: SAConnection):
-        self.__root_table = Table('accounts')
+        self.__table = Table('accounts')
         self.__connection = conn
 
     async def save(self, account: Account):
@@ -19,22 +19,35 @@ class AccountRepositoryMysql(AccountRepository):
             await self.__connection.execute(query)
             await transaction.commit()
         except:
-            transaction.rollback()
-            raise Exception('error save accounts')
+            await transaction.rollback()
+            raise Exception('error save account')
 
     async def find_by_email(self, email: str) -> Account:
-        query = MySQLQuery\
-            .from_(self.__root_table)\
-            .select('id', 'email', 'hashed_password', 'activate')\
-            .where(self.__root_table.email == email)
+        query = (MySQLQuery
+                 .from_(self.__table)
+                 .select('id', 'email', 'hashed_password', 'activate')
+                 .where(self.__table.email == email)
+                 )
         query_result = await self.__connection.execute(str(query))
         record = await query_result.first()
         return self.__convert_to_entity(record)
 
+    async def update(self, account: Account):
+        transaction = await self.__connection.begin()
+        try:
+            query = self.__convert_to_update_query(account)
+            print('#### query: ', query)
+            await self.__connection.execute(query)
+            await transaction.commit()
+
+        except:
+            await transaction.rollback()
+            raise Exception('error update account')
+
     def __convert_to_insert_query(self, account: Account) -> str:
         account_id, email, hashed_password, activate = account.serialize()
         query = MySQLQuery.into(
-            self.__root_table
+            self.__table
         ).columns(
             'id',
             'email',
@@ -46,6 +59,18 @@ class AccountRepositoryMysql(AccountRepository):
             hashed_password,
             int(activate),
         )
+
+        return str(query)
+
+    def __convert_to_update_query(self, account: Account) -> str:
+        account_id, mail_address, hashed_password, activate = account.serialize()
+        query = (
+            MySQLQuery
+            .update(self.__table)
+            .set(self.__table.email, mail_address)
+            .set(self.__table.hashed_password, hashed_password)
+            .set(self.__table.activate, int(activate))
+            .where(self.__table.id == account_id))
 
         return str(query)
 

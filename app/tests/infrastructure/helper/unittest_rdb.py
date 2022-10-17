@@ -1,7 +1,7 @@
 import asyncio
 from aiomysql.sa import create_engine
 from aiomysql.sa.engine import Engine
-from aiomysql.sa.connection import SAConnection
+from aiomysql.sa.connection import SAConnection, Transaction
 import pytest
 
 DB_NAME_PREFIX = 'test-'
@@ -28,11 +28,16 @@ async def get_connection() -> SAConnection:
     return await engine.acquire()
 
 
-# @pytest.fixture
-# async def connect():
-#     with await get_connection() as connection:
-#         yield connection
-#         connection.rollback()
+async def execute_command(command: str):
+    connection: SAConnection = await get_connection()
+    transaction: Transaction = await connection.begin()
+    await connection.execute(command)
+    await transaction.commit()
+
+
+async def execute_query(query: str):
+    connection: SAConnection = await get_connection()
+    return await connection.execute(query)
 
 
 class MySqlUnitTestHelper:

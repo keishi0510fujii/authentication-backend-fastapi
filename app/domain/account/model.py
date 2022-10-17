@@ -30,6 +30,21 @@ class Account:
         entity.__activate = activate
         return entity
 
+    def change_email(self, new_email: str):
+        if self.__email == new_email:
+            raise Exception('err change email')
+        self.__email = new_email
+        self.__activate = False
+
+    def change_password(self, new_password: str, password_confirm: str):
+        if new_password != password_confirm:
+            # TODO: Validatorクラスを生成して、バリデーションを行うこと
+            raise Exception("change password err")
+        self.__hashed_password = pbkdf2_sha256.hash(new_password)
+        self.__activate = False
+
+    def active(self):
+        self.__activate = True
+
     def serialize(self) -> (str, str, str, bool):
         return self.__id, self.__email, self.__hashed_password, self.__activate
-
