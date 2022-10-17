@@ -9,5 +9,9 @@ class AccountRepository(metaclass=abc.ABCMeta):
         pass
 
     @abc.abstractmethod
-    async def find_by_email(self, email: str):
+    async def find_by_email(self, email: str) -> Account:
+        pass
+
+    @abc.abstractmethod
+    async def update(self, account: Account):
         pass
