@@ -1,6 +1,6 @@
 import pytest
 import ulid
-from typing import List, Tuple
+from typing import List
 from domain.account.repository import AccountRepository
 from tests.infrastructure.helper.unittest_rdb import get_connection, execute_command, execute_query
 from infrastructure.mysql.account.repository import AccountRepositoryMysql
@@ -84,9 +84,7 @@ async def test_update():
     #   数値を変更すると挿入するレコードを増やせます
     record_count = 5
     records: List[InsertRecord] = create_insert_records(record_count)
-    #   `(id, email, hashed_password, activate), (id, email, hashed_password, activate), ...`の表記に変換
-    value_list = (f"('{r.id}', '{r.email}', '{r.hashed_password}', {r.activate})" for r in records)
-    values = ", ".join(value_list)
+    values = convert_to_insert_values(records)
     #   bulk insert
     command = f"INSERT INTO accounts (id, email, hashed_password, activate) VALUES {values}"
     await execute_command(command)
