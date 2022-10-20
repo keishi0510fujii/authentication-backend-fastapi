@@ -1,4 +1,6 @@
 import asyncio
+
+import aiomysql
 from aiomysql.sa import create_engine
 from aiomysql.sa.engine import Engine
 from aiomysql.sa.connection import SAConnection, Transaction
@@ -11,6 +13,34 @@ HOST = 'test-rdb'
 USER = 'testuser'
 PASSWORD = 'testsecret'
 PORT = 3306
+
+loop = asyncio.get_event_loop()
+
+
+class AttrDict(dict):
+    """Dict that can get attribute by dot, and doesn't raise KeyError"""
+
+    def __getattr__(self, name):
+        try:
+            return self[name]
+        except KeyError:
+            return None
+
+
+class AttrDictCursor(aiomysql.DictCursor):
+    dict_type = AttrDict
+
+
+async def get_cursor():
+    conn: aiomysql.connection = await aiomysql.connect(
+        user=USER,
+        password=PASSWORD,
+        host=HOST,
+        port=PORT,
+        db=DATABASE,
+        loop=loop
+    )
+    return await conn.cursor(AttrDictCursor)
 
 
 async def get_engine() -> Engine:

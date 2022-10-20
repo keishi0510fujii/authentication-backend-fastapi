@@ -2,6 +2,7 @@ from domain.account.repository import AccountRepository
 from domain.account.model import Account
 from pypika import Table, MySQLQuery
 from aiomysql.sa.connection import SAConnection
+from typing import List
 
 
 class AccountRepositoryMysql(AccountRepository):
@@ -12,15 +13,13 @@ class AccountRepositoryMysql(AccountRepository):
         self.__table = Table('accounts')
         self.__connection = conn
 
-    async def save(self, account: Account):
-        transaction = await self.__connection.begin()
-        try:
-            query = self.__convert_to_insert_query(account)
-            await self.__connection.execute(query)
-            await transaction.commit()
-        except:
-            await transaction.rollback()
-            raise Exception('error save account')
+    async def find_all(self) -> List[Account]:
+        query = (MySQLQuery
+                 .from_(self.__table)
+                 .select('id', 'email', 'hashed_password', 'activate')
+                 )
+        query_result = await self.__connection.execute(str(query))
+        return [self.__convert_to_entity(record) for record in await query_result.fetchall()]
 
     async def find_by_email(self, email: str) -> Account:
         query = (MySQLQuery
@@ -31,6 +30,16 @@ class AccountRepositoryMysql(AccountRepository):
         query_result = await self.__connection.execute(str(query))
         record = await query_result.first()
         return self.__convert_to_entity(record)
+
+    async def save(self, account: Account):
+        transaction = await self.__connection.begin()
+        try:
+            query = self.__convert_to_insert_query(account)
+            await self.__connection.execute(query)
+            await transaction.commit()
+        except:
+            await transaction.rollback()
+            raise Exception('error save account')
 
     async def update(self, account: Account):
         transaction = await self.__connection.begin()
