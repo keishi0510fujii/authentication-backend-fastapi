@@ -4,6 +4,8 @@ from typing import Tuple
 from application.account.interfaces import ICreateAccountUseCase
 from application.account.create_account_use_case import CreateAccountUseCase
 from domain.account.repository import AccountRepository
+from domain.account.service import IAccountChecker
+from domain.account.account_checker import AccountChecker
 from tests.infrastructure.helper.unittest_rdb import get_connection, execute_command, execute_query
 from infrastructure.mysql.account.repository import AccountRepositoryMysql
 
@@ -13,12 +15,18 @@ async def get_repository() -> AccountRepository:
     return AccountRepositoryMysql(connection)
 
 
+async def get_service() -> IAccountChecker:
+    repo = await get_repository()
+    return AccountChecker(repo)
+
+
 @pytest.mark.asyncio
 async def test_execute():
     #   インスタンスの生成
     repo: AccountRepository = await get_repository()
-    use_case: ICreateAccountUseCase = CreateAccountUseCase(repo)
-    #   テストデータを生成して、ユースケースの結果を取得
+    service: IAccountChecker = await get_service()
+    use_case: ICreateAccountUseCase = CreateAccountUseCase(repo, service)
+    #   ユースケースの結果を取得
     email, password = f"{ulid.new().str}@example.come", "hogeH0G="
     account_id = await use_case.execute(email, password, password)
     #   挿入されたレコードをを取得
