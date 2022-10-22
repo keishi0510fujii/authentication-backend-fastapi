@@ -1,77 +1,97 @@
+import aiomysql
 from domain.account.repository import AccountRepository
 from domain.account.model import Account
 from pypika import Table, MySQLQuery
-from aiomysql.sa.connection import SAConnection
+from aiomysql import Connection, Cursor
 from typing import List
+from infrastructure.mysql.base import AttrDict
+
+
+class AccountsTableRecord(aiomysql.DictCursor):
+    id: str
+    email: str
+    hashed_password: str
+    activate: int
+    #   object.{key_name}で推論が聞くように、dict_typeを変更している
+    dict_type = AttrDict
 
 
 class AccountRepositoryMysql(AccountRepository):
     __table: Table
-    __connection: SAConnection
+    __connection: Connection
 
-    def __init__(self, conn: SAConnection):
+    def __init__(self, conn: Connection):
         self.__table = Table('accounts')
         self.__connection = conn
 
     async def find_all(self) -> List[Account]:
-        query = (MySQLQuery
-                 .from_(self.__table)
-                 .select('id', 'email', 'hashed_password', 'activate')
-                 )
-        query_result = await self.__connection.execute(str(query))
-        return [self.__convert_to_entity(record) for record in await query_result.fetchall()]
+        query = (
+            MySQLQuery
+            .from_(self.__table)
+            .select('id', 'email', 'hashed_password', 'activate')
+        )
+        cursor: Cursor = await self.__connection.cursor(AccountsTableRecord)
+        await cursor.execute(str(query))
+        query_result: List[AccountsTableRecord] = await cursor.fetchall()
+        await cursor.close()
+        self.__connection.close()
+        return [self.__convert_to_entity(record) for record in query_result]
 
     async def find_by_email(self, email: str) -> Account:
-        query = (MySQLQuery
-                 .from_(self.__table)
-                 .select('id', 'email', 'hashed_password', 'activate')
-                 .where(self.__table.email == email)
-                 )
-        query_result = await self.__connection.execute(str(query))
-        record = await query_result.first()
+        query = (
+            MySQLQuery
+            .from_(self.__table)
+            .select('id', 'email', 'hashed_password', 'activate')
+            .where(self.__table.email == email)
+        )
+        cursor: Cursor = await self.__connection.cursor(AccountsTableRecord)
+        await cursor.execute(str(query))
+        record = await cursor.fetchone()
+        await cursor.close()
+        self.__connection.close()
         return self.__convert_to_entity(record)
 
     async def save(self, account: Account):
-        transaction = await self.__connection.begin()
+        cursor: Cursor = await self.__connection.cursor()
+        await self.__connection.begin()
         try:
-            query = self.__convert_to_insert_query(account)
-            await self.__connection.execute(query)
-            await transaction.commit()
+            command = self.__convert_to_insert_command(account)
+            await cursor.execute(command)
+            await self.__connection.commit()
         except:
-            await transaction.rollback()
+            await self.__connection.rollback()
             raise Exception('error save account')
+        finally:
+            await cursor.close()
+            self.__connection.close()
 
     async def update(self, account: Account):
-        transaction = await self.__connection.begin()
+        cursor: Cursor = await self.__connection.cursor()
+        await self.__connection.begin()
         try:
-            query = self.__convert_to_update_query(account)
-            print('#### query: ', query)
-            await self.__connection.execute(query)
-            await transaction.commit()
+            command = self.__convert_to_update_command(account)
+            await cursor.execute(command)
+            await self.__connection.commit()
 
         except:
-            await transaction.rollback()
+            await self.__connection.rollback()
             raise Exception('error update account')
+        finally:
+            await cursor.close()
+            self.__connection.close()
 
-    def __convert_to_insert_query(self, account: Account) -> str:
+    def __convert_to_insert_command(self, account: Account) -> str:
         account_id, email, hashed_password, activate = account.serialize()
-        query = MySQLQuery.into(
-            self.__table
-        ).columns(
-            'id',
-            'email',
-            'hashed_password',
-            'activate',
-        ).insert(
-            account_id,
-            email,
-            hashed_password,
-            int(activate),
+        query = (
+            MySQLQuery
+            .into(self.__table)
+            .columns('id', 'email', 'hashed_password', 'activate')
+            .insert(account_id, email, hashed_password, int(activate))
         )
 
         return str(query)
 
-    def __convert_to_update_query(self, account: Account) -> str:
+    def __convert_to_update_command(self, account: Account) -> str:
         account_id, mail_address, hashed_password, activate = account.serialize()
         query = (
             MySQLQuery
@@ -84,10 +104,10 @@ class AccountRepositoryMysql(AccountRepository):
         return str(query)
 
     @staticmethod
-    def __convert_to_entity(record) -> Account:
+    def __convert_to_entity(record: AccountsTableRecord) -> Account:
         return Account.restore(
-            record[0],
-            record[1],
-            record[2],
-            bool(record[3]),
+            record.id,
+            record.email,
+            record.hashed_password,
+            bool(record.activate),
         )
