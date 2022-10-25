@@ -34,7 +34,9 @@ class AccountRepositoryMysql(AccountRepository):
         await cursor.execute(str(query))
         query_result: List[AccountsTableRecord] = await cursor.fetchall()
         await cursor.close()
-        self.__connection.close()
+        if not query_result:
+            return []
+
         return [self.__convert_to_entity(record) for record in query_result]
 
     async def find_by_email(self, email: str) -> Account:
@@ -48,7 +50,6 @@ class AccountRepositoryMysql(AccountRepository):
         await cursor.execute(str(query))
         record = await cursor.fetchone()
         await cursor.close()
-        self.__connection.close()
         return self.__convert_to_entity(record)
 
     async def save(self, account: Account):
@@ -63,7 +64,6 @@ class AccountRepositoryMysql(AccountRepository):
             raise Exception('error save account')
         finally:
             await cursor.close()
-            self.__connection.close()
 
     async def update(self, account: Account):
         cursor: Cursor = await self.__connection.cursor()
@@ -78,7 +78,6 @@ class AccountRepositoryMysql(AccountRepository):
             raise Exception('error update account')
         finally:
             await cursor.close()
-            self.__connection.close()
 
     def __convert_to_insert_command(self, account: Account) -> str:
         account_id, email, hashed_password, activate = account.serialize()

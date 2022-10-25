@@ -1,26 +1,27 @@
 import asyncio
-from aiomysql.sa.engine import Engine
-from aiomysql.sa import create_engine
-from aiomysql.sa.connection import SAConnection
+import aiomysql
+from aiomysql.connection import Connection
+
+DATABASE = 'sample-authentication'
+HOST = 'rdb'
+USER = 'devuser'
+PASSWORD = 'devsecret'
+PORT = 3306
+
+loop = asyncio.get_event_loop()
 
 
-class MysqlConfig:
-    __engine: Engine
-    __connection: SAConnection
+async def get_connection() -> Connection:
+    return await aiomysql.connect(
+        user=USER,
+        password=PASSWORD,
+        host=HOST,
+        port=PORT,
+        db=DATABASE,
+        loop=loop
+    )
 
-    async def connect(self):
-        self.__engine = await create_engine(
-            user='devuser',
-            password='devsecret',
-            host='rdb',
-            port=3306,
-            db='sample-authentication',
-        )
-        self.__connection = await self.__engine.acquire()
 
-    def get_connection(self) -> SAConnection:
-        return self.__connection
-
-    def close(self):
-        asyncio.run(self.__connection.close())
-        asyncio.run(self.__engine.close())
+async def close_connection():
+    conn: Connection = await get_connection()
+    conn.close()

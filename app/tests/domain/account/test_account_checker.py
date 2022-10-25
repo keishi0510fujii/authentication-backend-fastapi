@@ -6,14 +6,14 @@ from tests.helper.infrastructure.rdb.account import AccountDto
 from tests.helper.infrastructure.rdb.account import AccountsTablePersist, AccountDtoListFactory
 from domain.account.repository import AccountRepository
 from infrastructure.mysql.account.repository import AccountRepositoryMysql
-from domain.account.service import IAccountChecker
-from domain.account.account_checker import AccountChecker
+from domain.account.service import IAccountCheck
+from domain.account.account_check import AccountCheck
 
 
-async def get_account_checker() -> IAccountChecker:
+async def get_account_checker() -> IAccountCheck:
     conn: Connection = await get_connection()
     repo: AccountRepository = AccountRepositoryMysql(conn)
-    return AccountChecker(repo)
+    return AccountCheck(repo)
 
 
 @pytest.mark.asyncio
