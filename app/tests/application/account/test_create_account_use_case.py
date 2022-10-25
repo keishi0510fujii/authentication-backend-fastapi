@@ -3,8 +3,8 @@ import ulid
 from application.account.interfaces import ICreateAccountUseCase
 from application.account.create_account_use_case import CreateAccountUseCase
 from domain.account.repository import AccountRepository
-from domain.account.service import IAccountChecker
-from domain.account.account_checker import AccountChecker
+from domain.account.service import IAccountCheck
+from domain.account.account_check import AccountCheck
 from infrastructure.mysql.account.repository import AccountRepositoryMysql
 from tests.helper.infrastructure.rdb.base import get_connection
 from tests.helper.infrastructure.rdb.account import AccountDto
@@ -16,14 +16,14 @@ async def get_repository() -> AccountRepository:
     return AccountRepositoryMysql(connection)
 
 
-async def get_account_checker() -> IAccountChecker:
+async def get_account_checker() -> IAccountCheck:
     repo = await get_repository()
-    return AccountChecker(repo)
+    return AccountCheck(repo)
 
 
 async def get_use_case() -> ICreateAccountUseCase:
     repository: AccountRepository = await get_repository()
-    account_checker: IAccountChecker = await get_account_checker()
+    account_checker: IAccountCheck = await get_account_checker()
     return CreateAccountUseCase(repository, account_checker)
 
 

@@ -81,3 +81,10 @@ async def test_find_all():
         assert (dto.id, dto.email, dto.hashed_password, bool(dto.activate)) == account.serialize()
     #   テーブルを初期化するため、レコードを全て削除
     await AccountsTablePersist.delete_by_dto_list(dto_list)
+
+
+@pytest.mark.asyncio
+async def test_find_all_empty():
+    repository: AccountRepository = await get_repository()
+    account_list: List[Account] = await repository.find_all()
+    assert account_list == []
